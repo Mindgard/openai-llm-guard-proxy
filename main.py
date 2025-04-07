@@ -58,7 +58,16 @@ def chat_completions(
         input_prompt, input_results_valid, input_results_score = scan_prompt(input_scanners, message_content)
         if any(input_results_valid.values()) is False:
             print(f"Prompt {message_content} is not valid, scores: {input_results_score}")
-            raise HTTPException(status_code=400, detail=f"LLM Guard detected badness on input {message_content} {input_results_score}")
+
+            return {
+                "id": hashlib.sha256(str(request.messages).encode()).hexdigest(),
+                "object": "chat.completion",
+                "created": time.time(),
+                "model": request.model,
+                "choices": [
+                    {"message": ChatMessage(role="assistant", content=f"LLM Guard detected badness on input {message_content} {input_results_score}")}
+                ],
+            }
         new_messages.append(
             ChatMessage(role=request.messages[index].role,
                         content=input_prompt)
@@ -78,7 +87,16 @@ def chat_completions(
     )
     if any(output_results_valid.values()) is False:
         print(f"Output {response_text} is not valid, scores: {output_results_score}")
-        raise HTTPException(status_code=400, detail=f"LLM Guard detected badness on output {response_text} {output_results_score}")
+
+        return {
+                "id": hashlib.sha256(str(request.messages).encode()).hexdigest(),
+                "object": "chat.completion",
+                "created": time.time(),
+                "model": request.model,
+                "choices": [
+                    {"message": ChatMessage(role="assistant", content=f"LLM Guard detected badness on output {response_text} {output_results_score}")}
+                ],
+            }
 
     return {
         "id": hashlib.sha256(str(request.messages).encode()).hexdigest(),
